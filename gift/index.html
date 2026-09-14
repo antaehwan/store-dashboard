@@ -28,11 +28,6 @@ h1{font-size:23px;margin:0 0 4px;letter-spacing:-.3px}
 .banner.ok{background:var(--okbg);color:var(--ok)}
 .banner.bad{background:var(--badbg);color:var(--bad)}
 .banner .n{font-size:13px;font-weight:600;opacity:.85}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
-.card .k{font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600}
-.card .v{font-size:26px;font-weight:800;letter-spacing:-.6px}
-.card .v small{font-size:13px;font-weight:600;color:var(--dim);margin-left:3px}
 .card.good .v{color:var(--ok)} .card.bad .v{color:var(--bad)}
 h2{font-size:15px;margin:26px 0 10px;color:var(--accent);letter-spacing:-.2px}
 .tblbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
@@ -45,10 +40,11 @@ tr.miss{background:var(--badbg)} tr.over{background:var(--warnbg)}
 tr.tot td{font-weight:800;border-top:2px solid var(--line);background:var(--bg)}
 .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700}
 .tag.miss{background:var(--bad);color:#fff} .tag.over{background:var(--warn);color:#fff}
+h2.tight{margin-top:4px}
 .empty{padding:22px;text-align:center;color:var(--dim);font-size:14px}
 .note{color:var(--dim);font-size:12.5px;margin-top:8px;line-height:1.7}
 footer{margin-top:30px;color:var(--dim);font-size:12px;text-align:center}
-@media(max-width:520px){h1{font-size:20px}.card .v{font-size:22px}.wrap{padding:14px 12px 48px}}
+@media(max-width:520px){h1{font-size:20px}.wrap{padding:14px 12px 48px}}
 </style>
 </head>
 <body>
@@ -58,11 +54,13 @@ footer{margin-top:30px;color:var(--dim);font-size:12px;text-align:center}
     <div class="sub" id="sub">불러오는 중…</div>
   </header>
   <div id="banner" class="banner ok">불러오는 중…</div>
-  <div class="cards" id="cards"></div>
 
-  <h2>확인이 필요한 영수증</h2>
-  <div class="tblbox" id="issuebox"></div>
-  <div class="note" id="issuenote"></div>
+  <section id="issuesec" hidden>
+    <h2 class="tight">확인이 필요한 영수증</h2>
+    <div class="tblbox" id="issuebox"></div>
+    <div class="note" id="issuenote"></div>
+  </section>
+
 
   <h2>일자별</h2>
   <div class="tblbox"><table id="daily"></table></div>
@@ -98,23 +96,12 @@ function render(d){
     : `✅ 이상 없음 — 누락·초과 0건 <span class="n">증정 ${s.실제}개가 기준과 정확히 일치합니다</span>`;
 
   const rate=s.제공율==null?"—":(s.제공율*100).toFixed(1)+"%";
-  $("#cards").innerHTML=[
-    ["줘야 할 개수 ②",n(s.이론)+'<small>개</small>',""],
-    ["실제 찍힌 개수 ①",n(s.실제)+'<small>개</small>',""],
-    ["차이",(s.차이>0?"+":"")+s.차이+'<small>개</small>',s.차이===0?"good":"bad"],
-    ["제공율",rate,s.차이===0?"good":"bad"],
-    ["누락",n(s.누락)+'<small>건</small>',s.누락?"bad":"good"],
-    ["초과",n(s.초과)+'<small>건</small>',s.초과?"bad":"good"],
-    ["유효 영수증",n(s.유효)+'<small>건</small>',""],
-    ["증정 대상",n(s.대상)+'<small>건</small>',""],
-    ["유효 총매출",n(s.총매출)+'<small>원</small>',""],
-    ["고객수",n(s.고객)+'<small>명</small>',""],
-  ].map(([k,v,c])=>`<div class="card ${c}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
 
-  const box=$("#issuebox");
+  const box=$("#issuebox"), sec=$("#issuesec");
   if(!d.이슈.length){
-    box.innerHTML='<div class="empty">✅ 누락·초과 없음 — 전건 정상입니다.</div>';
+    sec.hidden=true;                    // 배너가 이미 '이상 없음'을 알리므로 숨김
   }else{
+    sec.hidden=false;
     box.innerHTML='<table><thead><tr>'+
       ["구분","일자","거래번호","테이블","결제시각","총매출","할인","①찍힘","②줘야함","차이"]
       .map(h=>`<th>${h}</th>`).join("")+'</tr></thead><tbody>'+
@@ -126,9 +113,9 @@ function render(d){
           `<td>${i.실제-i.이론>0?"+":""}${i.실제-i.이론}</td></tr>`;
       }).join("")+'</tbody></table>';
   }
-  $("#issuenote").textContent = d.이슈.length
-    ? "누락 = 기준을 넘었는데 증정이 안 찍힌 영수증 · 초과 = 기준 미만인데 증정이 찍힌 영수증. 반품·재결제로 정정된 건은 제외했습니다."
-    : "반품 후 재결제로 정정된 건("+d.취소체인.length+"건)은 자동으로 제외했습니다.";
+  if(d.이슈.length) $("#issuenote").textContent =
+    "누락 = 기준을 넘었는데 증정이 안 찍힌 영수증 · 초과 = 기준 미만인데 증정이 찍힌 영수증. "+
+    "반품·재결제로 정정된 건("+d.취소체인.length+"건)은 제외했습니다.";
 
   const D=d.일자별;
   $("#daily").innerHTML='<thead><tr>'+
