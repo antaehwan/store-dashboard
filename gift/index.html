@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>증정 트래킹</title>
+<style>
+:root{
+  --bg:#f4f6f8; --card:#fff; --ink:#1b2733; --dim:#6b7a88; --line:#e3e8ee;
+  --ok:#1a7f4b; --okbg:#e6f5ec; --bad:#c0342b; --badbg:#fdeceb;
+  --warn:#9a6b00; --warnbg:#fdf4e0; --accent:#2f4f5f;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#12171c; --card:#1b2229; --ink:#e8eef4; --dim:#93a2b1; --line:#2a343e;
+  --ok:#5fd193; --okbg:#12301f; --bad:#ff8a80; --badbg:#38191a;
+  --warn:#e8c06a; --warnbg:#332a14; --accent:#8fb3c7;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+ font:15px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Segoe UI",sans-serif;
+ -webkit-text-size-adjust:100%}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 64px}
+header{margin:8px 0 18px}
+h1{font-size:23px;margin:0 0 4px;letter-spacing:-.3px}
+.sub{color:var(--dim);font-size:13px}
+.banner{border-radius:12px;padding:16px 18px;margin:16px 0 20px;font-weight:700;font-size:17px;
+ display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.banner.ok{background:var(--okbg);color:var(--ok)}
+.banner.bad{background:var(--badbg);color:var(--bad)}
+.banner .n{font-size:13px;font-weight:600;opacity:.85}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card .k{font-size:12px;color:var(--dim);margin-bottom:6px;font-weight:600}
+.card .v{font-size:26px;font-weight:800;letter-spacing:-.6px}
+.card .v small{font-size:13px;font-weight:600;color:var(--dim);margin-left:3px}
+.card.good .v{color:var(--ok)} .card.bad .v{color:var(--bad)}
+h2{font-size:15px;margin:26px 0 10px;color:var(--accent);letter-spacing:-.2px}
+.tblbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+th,td{padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{background:var(--accent);color:#fff;font-weight:600;font-size:12px;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:none}
+tr.miss{background:var(--badbg)} tr.over{background:var(--warnbg)}
+tr.tot td{font-weight:800;border-top:2px solid var(--line);background:var(--bg)}
+.tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700}
+.tag.miss{background:var(--bad);color:#fff} .tag.over{background:var(--warn);color:#fff}
+.empty{padding:22px;text-align:center;color:var(--dim);font-size:14px}
+.note{color:var(--dim);font-size:12.5px;margin-top:8px;line-height:1.7}
+footer{margin-top:30px;color:var(--dim);font-size:12px;text-align:center}
+@media(max-width:520px){h1{font-size:20px}.card .v{font-size:22px}.wrap{padding:14px 12px 48px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1 id="title">증정 트래킹</h1>
+    <div class="sub" id="sub">불러오는 중…</div>
+  </header>
+  <div id="banner" class="banner ok">불러오는 중…</div>
+  <div class="cards" id="cards"></div>
+
+  <h2>확인이 필요한 영수증</h2>
+  <div class="tblbox" id="issuebox"></div>
+  <div class="note" id="issuenote"></div>
+
+  <h2>일자별</h2>
+  <div class="tblbox"><table id="daily"></table></div>
+  <div class="note" id="rulenote"></div>
+
+  <footer id="foot"></footer>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const n=v=>(v==null?"":Number(v).toLocaleString("ko-KR"));
+const md=d=>String(d||"").slice(5);
+
+fetch("../data/gift.json?t="+Date.now())
+  .then(r=>{if(!r.ok)throw new Error(r.status);return r.json()})
+  .then(render)
+  .catch(e=>{
+    $("#banner").className="banner bad";
+    $("#banner").textContent="데이터를 불러오지 못했습니다 ("+e.message+")";
+    $("#sub").textContent="";
+  });
+
+function render(d){
+  const s=d.합계;
+  document.title=d.행사명+" — 증정 트래킹";
+  $("#title").textContent=d.행사명;
+  $("#sub").textContent=`${d.매장명}  ·  ${d.기간||""}  ·  마지막 결제 ${d.마지막결제||"—"}`;
+
+  const bad=s.누락+s.초과;
+  const b=$("#banner");
+  b.className="banner "+(bad?"bad":"ok");
+  b.innerHTML = bad
+    ? `⚠ 확인 필요 — 누락 ${s.누락}건 · 초과 ${s.초과}건 <span class="n">아래 목록의 거래번호를 POS에서 확인하세요</span>`
+    : `✅ 이상 없음 — 누락·초과 0건 <span class="n">증정 ${s.실제}개가 기준과 정확히 일치합니다</span>`;
+
+  const rate=s.제공율==null?"—":(s.제공율*100).toFixed(1)+"%";
+  $("#cards").innerHTML=[
+    ["줘야 할 개수 ②",n(s.이론)+'<small>개</small>',""],
+    ["실제 찍힌 개수 ①",n(s.실제)+'<small>개</small>',""],
+    ["차이",(s.차이>0?"+":"")+s.차이+'<small>개</small>',s.차이===0?"good":"bad"],
+    ["제공율",rate,s.차이===0?"good":"bad"],
+    ["누락",n(s.누락)+'<small>건</small>',s.누락?"bad":"good"],
+    ["초과",n(s.초과)+'<small>건</small>',s.초과?"bad":"good"],
+    ["유효 영수증",n(s.유효)+'<small>건</small>',""],
+    ["증정 대상",n(s.대상)+'<small>건</small>',""],
+    ["유효 총매출",n(s.총매출)+'<small>원</small>',""],
+    ["고객수",n(s.고객)+'<small>명</small>',""],
+  ].map(([k,v,c])=>`<div class="card ${c}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+  const box=$("#issuebox");
+  if(!d.이슈.length){
+    box.innerHTML='<div class="empty">✅ 누락·초과 없음 — 전건 정상입니다.</div>';
+  }else{
+    box.innerHTML='<table><thead><tr>'+
+      ["구분","일자","거래번호","테이블","결제시각","총매출","할인","①찍힘","②줘야함","차이"]
+      .map(h=>`<th>${h}</th>`).join("")+'</tr></thead><tbody>'+
+      d.이슈.map(i=>{
+        const cls=i.판정==="누락"?"miss":"over";
+        return `<tr class="${cls}"><td><span class="tag ${cls}">${i.판정}</span></td>`+
+          `<td>${md(i.일자)}</td><td><b>${i.거래}</b></td><td>${i.테이블}</td><td>${i.결제}</td>`+
+          `<td>${n(i.총매출)}</td><td>${n(i.할인)}</td><td>${i.실제}</td><td>${i.이론}</td>`+
+          `<td>${i.실제-i.이론>0?"+":""}${i.실제-i.이론}</td></tr>`;
+      }).join("")+'</tbody></table>';
+  }
+  $("#issuenote").textContent = d.이슈.length
+    ? "누락 = 기준을 넘었는데 증정이 안 찍힌 영수증 · 초과 = 기준 미만인데 증정이 찍힌 영수증. 반품·재결제로 정정된 건은 제외했습니다."
+    : "반품 후 재결제로 정정된 건("+d.취소체인.length+"건)은 자동으로 제외했습니다.";
+
+  const D=d.일자별;
+  $("#daily").innerHTML='<thead><tr>'+
+    ["일자","전체","취소","유효","총매출","고객","대상","②","①","차이","누락","초과","제공율"]
+    .map(h=>`<th>${h}</th>`).join("")+'</tr></thead><tbody>'+
+    D.map(x=>{
+      const diff=x.실제-x.이론, rt=x.이론?((x.실제/x.이론*100).toFixed(1)+"%"):"—";
+      const cls=x.누락?"miss":(x.초과?"over":"");
+      return `<tr class="${cls}"><td>${md(x.일자)}</td><td>${n(x.전체)}</td><td>${n(x.취소)}</td>`+
+        `<td>${n(x.유효)}</td><td>${n(x.총매출)}</td><td>${n(x.고객)}</td><td>${n(x.대상)}</td>`+
+        `<td>${x.이론}</td><td>${x.실제}</td><td>${diff>0?"+":""}${diff}</td>`+
+        `<td>${x.누락||""}</td><td>${x.초과||""}</td><td>${rt}</td></tr>`;
+    }).join("")+
+    `<tr class="tot"><td>합계</td><td>${n(s.영수증)}</td><td>${n(s.취소)}</td><td>${n(s.유효)}</td>`+
+    `<td>${n(s.총매출)}</td><td>${n(s.고객)}</td><td>${n(s.대상)}</td><td>${s.이론}</td><td>${s.실제}</td>`+
+    `<td>${s.차이>0?"+":""}${s.차이}</td><td>${s.누락||""}</td><td>${s.초과||""}</td><td>${rate}</td></tr>`+
+    '</tbody>';
+
+  const k=d.기준;
+  $("#rulenote").textContent=
+    `기준 — 총매출(할인 전·VAT 포함) ${n(k.최소금액)}원 이상부터 1개, 이후 ${n(k.개당금액)}원마다 1개씩 추가(올림). `+
+    `증정품은 상품명에 "${k.증정품문자}"가 들어간 항목으로 셉니다.`;
+  $("#foot").textContent="갱신 "+d.갱신;
+}
+</script>
+</body>
+</html>
