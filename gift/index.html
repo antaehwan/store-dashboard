@@ -41,6 +41,18 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line);background:var(--bg)}
 .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700}
 .tag.miss{background:var(--bad);color:#fff} .tag.over{background:var(--warn);color:#fff}
 h2.tight{margin-top:4px}
+.fresh{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 16px}
+.fb{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px}
+.fb .k{font-size:12px;color:var(--dim);font-weight:600;margin-bottom:5px}
+.fb .v{font-size:25px;font-weight:800;letter-spacing:-.5px;line-height:1.15;white-space:nowrap}
+.fb .v .d{font-size:14px;font-weight:700;color:var(--dim);margin-right:5px}
+.fb .s{font-size:12.5px;color:var(--dim);margin-top:4px}
+.fb.upd .v{font-size:20px}
+.fb.stale{background:var(--warnbg);border-color:transparent}
+.fb.stale .k,.fb.stale .v,.fb.stale .s{color:var(--warn)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:7px;vertical-align:2px}
+.fb.stale .dot{background:var(--warn)}
+@media(max-width:560px){.fresh{grid-template-columns:1fr}.fb .v{font-size:22px}.fb.upd .v{font-size:18px}}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
 .card .k{font-size:12.5px;color:var(--dim);margin-bottom:7px;font-weight:600}
@@ -51,7 +63,6 @@ h2.tight{margin-top:4px}
 @media(max-width:560px){.cards{grid-template-columns:1fr}.card .v{font-size:24px}}
 .empty{padding:22px;text-align:center;color:var(--dim);font-size:14px}
 .note{color:var(--dim);font-size:12.5px;margin-top:8px;line-height:1.7}
-footer{margin-top:30px;color:var(--dim);font-size:12px;text-align:center}
 @media(max-width:520px){h1{font-size:20px}.wrap{padding:14px 12px 48px}}
 </style>
 </head>
@@ -61,6 +72,19 @@ footer{margin-top:30px;color:var(--dim);font-size:12px;text-align:center}
     <h1 id="title">증정 트래킹</h1>
     <div class="sub" id="sub">불러오는 중…</div>
   </header>
+  <div class="fresh">
+    <div class="fb" id="fbpay">
+      <div class="k">마지막 결제</div>
+      <div class="v" id="lastpay">—</div>
+      <div class="s" id="paysub">&nbsp;</div>
+    </div>
+    <div class="fb upd" id="fbupd">
+      <div class="k">데이터 갱신</div>
+      <div class="v"><span class="dot"></span><span id="updrel">—</span></div>
+      <div class="s" id="updabs">&nbsp;</div>
+    </div>
+  </div>
+
   <div id="banner" class="banner ok">불러오는 중…</div>
 
   <section id="issuesec" hidden>
@@ -78,27 +102,37 @@ footer{margin-top:30px;color:var(--dim);font-size:12px;text-align:center}
   <div class="cards" id="cards"></div>
   <div class="note" id="cardnote"></div>
 
-  <footer id="foot"></footer>
 </div>
 <script>
 const $=s=>document.querySelector(s);
 const n=v=>(v==null?"":Number(v).toLocaleString("ko-KR"));
 const md=d=>String(d||"").slice(5);
 
-fetch("../data/gift.json?t="+Date.now())
-  .then(r=>{if(!r.ok)throw new Error(r.status);return r.json()})
-  .then(render)
-  .catch(e=>{
-    $("#banner").className="banner bad";
-    $("#banner").textContent="데이터를 불러오지 못했습니다 ("+e.message+")";
-    $("#sub").textContent="";
-  });
+function load(){
+  return fetch("../data/gift.json?t="+Date.now())
+    .then(r=>{if(!r.ok)throw new Error(r.status);return r.json()})
+    .then(render)
+    .catch(e=>{
+      $("#banner").className="banner bad";
+      $("#banner").textContent="데이터를 불러오지 못했습니다 ("+e.message+")";
+    });
+}
+load();
 
 function render(d){
   const s=d.합계;
   document.title=d.행사명+" — 증정 트래킹";
   $("#title").textContent=d.행사명;
-  $("#sub").textContent=`${d.매장명}  ·  ${d.기간||""}  ·  마지막 결제 ${d.마지막결제||"—"}`;
+  $("#sub").textContent=`${d.매장명}  ·  ${d.기간||""}`;
+
+  // ── 마지막 결제 / 갱신 상태 ──
+  const lastDay=(d.일자별&&d.일자별.length)?d.일자별[d.일자별.length-1].일자:"";
+  $("#lastpay").innerHTML = d.마지막결제
+    ? `<span class="d">${md(lastDay)}</span>${d.마지막결제}`
+    : "—";
+  $("#paysub").textContent = d.마지막결제 ? "이 시각까지의 영수증이 반영됐습니다" : "\u00a0";
+  window.__upd = d.갱신 || "";
+  tickFresh();
 
   const bad=s.누락+s.초과;
   const b=$("#banner");
@@ -160,8 +194,27 @@ function render(d){
   $("#rulenote").textContent=
     `기준 — 총매출(할인 전·VAT 포함) ${n(k.최소금액)}원 이상부터 1개, 이후 ${n(k.개당금액)}원마다 1개씩 추가(올림). `+
     `증정품은 상품명에 "${k.증정품문자}"가 들어간 항목으로 셉니다.`;
-  $("#foot").textContent="갱신 "+d.갱신;
 }
+
+function tickFresh(){
+  const raw=window.__upd; if(!raw) return;
+  const t=new Date(raw.replace(" ","T")+":00+09:00");
+  if(isNaN(t)) return;
+  const mins=Math.max(0,Math.floor((Date.now()-t.getTime())/60000));
+  let rel;
+  if(mins<1)        rel="방금 전";
+  else if(mins<60)  rel=mins+"분 전";
+  else if(mins<1440)rel=Math.floor(mins/60)+"시간 "+(mins%60)+"분 전";
+  else              rel=Math.floor(mins/1440)+"일 전";
+  $("#updrel").textContent=rel;
+  $("#updabs").textContent=raw+" 기준";
+  // 영업시간(KST 11~22시)인데 90분 넘게 안 바뀌었으면 경고
+  const kst=new Date(Date.now()+ (new Date().getTimezoneOffset()*60000) + 9*3600000);
+  const h=kst.getHours();
+  $("#fbupd").classList.toggle("stale", mins>90 && h>=11 && h<23);
+}
+setInterval(tickFresh,20000);
+setInterval(load,60000);
 </script>
 </body>
 </html>
