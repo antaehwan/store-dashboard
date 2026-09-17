@@ -31,7 +31,12 @@ h1{font-size:23px;margin:0 0 4px;letter-spacing:-.3px}
 .card.good .v{color:var(--ok)} .card.bad .v{color:var(--bad)}
 h2{font-size:15px;margin:26px 0 10px;color:var(--accent);letter-spacing:-.2px}
 .tblbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow-x:auto}
-table{border-collapse:collapse;width:100%;min-width:560px;font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+#issuebox table{min-width:560px}
+@media(max-width:520px){
+  #daily{font-size:12px}
+  #daily th,#daily td{padding:8px 5px}
+}
 th,td{padding:9px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
 th{background:var(--accent);color:#fff;font-weight:600;font-size:12px;position:sticky;top:0}
 th:first-child,td:first-child{text-align:left}
@@ -189,18 +194,16 @@ function render(d){
 
   const D=d.일자별;
   $("#daily").innerHTML='<thead><tr>'+
-    ["일자","전체","취소","유효","총매출","고객","대상","②","①","차이","누락","초과","제공율"]
+    ["일자","②줘야함","①찍힘","차이","누락","초과","제공율"]
     .map(h=>`<th>${h}</th>`).join("")+'</tr></thead><tbody>'+
     D.map(x=>{
       const diff=x.실제-x.이론, rt=x.이론?((x.실제/x.이론*100).toFixed(1)+"%"):"—";
       const cls=x.누락?"miss":(x.초과?"over":"");
-      return `<tr class="${cls}"><td>${md(x.일자)}</td><td>${n(x.전체)}</td><td>${n(x.취소)}</td>`+
-        `<td>${n(x.유효)}</td><td>${n(x.총매출)}</td><td>${n(x.고객)}</td><td>${n(x.대상)}</td>`+
+      return `<tr class="${cls}"><td>${md(x.일자)}</td>`+
         `<td>${x.이론}</td><td>${x.실제}</td><td>${diff>0?"+":""}${diff}</td>`+
         `<td>${x.누락||""}</td><td>${x.초과||""}</td><td>${rt}</td></tr>`;
     }).join("")+
-    `<tr class="tot"><td>합계</td><td>${n(s.영수증)}</td><td>${n(s.취소)}</td><td>${n(s.유효)}</td>`+
-    `<td>${n(s.총매출)}</td><td>${n(s.고객)}</td><td>${n(s.대상)}</td><td>${s.이론}</td><td>${s.실제}</td>`+
+    `<tr class="tot"><td>합계</td><td>${s.이론}</td><td>${s.실제}</td>`+
     `<td>${s.차이>0?"+":""}${s.차이}</td><td>${s.누락||""}</td><td>${s.초과||""}</td><td>${rate}</td></tr>`+
     '</tbody>';
 
