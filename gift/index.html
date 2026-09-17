@@ -41,6 +41,20 @@ tr.tot td{font-weight:800;border-top:2px solid var(--line);background:var(--bg)}
 .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700}
 .tag.miss{background:var(--bad);color:#fff} .tag.over{background:var(--warn);color:#fff}
 h2.tight{margin-top:4px}
+.fb.pay{position:relative}
+.fb.flash{animation:flash 1.6s ease-out}
+@keyframes flash{0%{background:var(--okbg);border-color:var(--ok)}100%{background:var(--card);border-color:var(--line)}}
+.btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);
+ font:inherit;font-weight:700;font-size:13.5px;padding:9px 16px;border-radius:9px;cursor:pointer;
+ display:inline-flex;align-items:center;gap:7px;transition:background .15s,border-color .15s}
+.btn:hover:not(:disabled){background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn .sp{width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;
+ border-radius:50%;animation:spin .7s linear infinite;display:none}
+.btn.busy .sp{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.refresh{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 16px}
+.refresh .msg{font-size:12.5px;color:var(--dim)}
 .fresh{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 16px}
 .fb{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px}
 .fb .k{font-size:12px;color:var(--dim);font-weight:600;margin-bottom:5px}
@@ -73,7 +87,7 @@ h2.tight{margin-top:4px}
     <div class="sub" id="sub">불러오는 중…</div>
   </header>
   <div class="fresh">
-    <div class="fb" id="fbpay">
+    <div class="fb pay" id="fbpay">
       <div class="k">마지막 결제</div>
       <div class="v" id="lastpay">—</div>
       <div class="s" id="paysub">&nbsp;</div>
@@ -83,6 +97,13 @@ h2.tight{margin-top:4px}
       <div class="v"><span class="dot"></span><span id="updrel">—</span></div>
       <div class="s" id="updabs">&nbsp;</div>
     </div>
+  </div>
+
+  <div class="refresh">
+    <button class="btn" id="btnrefresh" type="button">
+      <span class="sp"></span><span id="btntext">지금 갱신</span>
+    </button>
+    <span class="msg" id="refmsg"></span>
   </div>
 
   <div id="banner" class="banner ok">불러오는 중…</div>
@@ -131,6 +152,9 @@ function render(d){
     ? `<span class="d">${md(lastDay)}</span>${d.마지막결제}`
     : "—";
   $("#paysub").textContent = d.마지막결제 ? "이 시각까지의 영수증이 반영됐습니다" : "\u00a0";
+  if(window.__upd && d.갱신 && d.갱신!==window.__upd){
+    const el=$("#fbpay"); el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  }
   window.__upd = d.갱신 || "";
   tickFresh();
 
@@ -214,7 +238,56 @@ function tickFresh(){
   $("#fbupd").classList.toggle("stale", mins>90 && h>=11 && h<23);
 }
 setInterval(tickFresh,20000);
-setInterval(load,60000);
+setInterval(()=>{ if(!window.__busy) load(); },60000);
+
+const btn=$("#btnrefresh"), btntext=$("#btntext"), refmsg=$("#refmsg");
+function setBusy(on,label){
+  window.__busy=on;
+  btn.disabled=on; btn.classList.toggle("busy",on);
+  btntext.textContent = on ? (label||"갱신 중…") : "지금 갱신";
+}
+btn.addEventListener("click", async ()=>{
+  const before=window.__upd;
+  setBusy(true,"요청 중…");
+  refmsg.textContent="";
+  try{
+    const r=await fetch("../api/refresh",{method:"POST"});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||!j.ok){
+      setBusy(false);
+      refmsg.textContent = j.code==="no_token"
+        ? "서버 설정이 아직입니다 (GH_TOKEN 미설정)"
+        : "갱신 요청 실패: "+(j.error||r.status);
+      return;
+    }
+    if(j.status==="cooldown"){
+      setBusy(false);
+      refmsg.textContent="방금 갱신했습니다. 잠시 후 다시 눌러주세요.";
+      load(); return;
+    }
+    // POS 조회에 1~3분 걸린다 — 데이터가 바뀔 때까지 5초마다 확인
+    setBusy(true,"POS 조회 중…");
+    refmsg.textContent="1~3분 걸립니다. 창을 닫아도 갱신은 계속됩니다.";
+    const started=Date.now();
+    const timer=setInterval(async ()=>{
+      const elapsed=Math.floor((Date.now()-started)/1000);
+      setBusy(true,`POS 조회 중… ${elapsed}초`);
+      await load();
+      if(window.__upd && window.__upd!==before){
+        clearInterval(timer); setBusy(false);
+        refmsg.textContent="갱신 완료 — 마지막 결제 "+($("#lastpay").textContent||"");
+        return;
+      }
+      if(elapsed>300){
+        clearInterval(timer); setBusy(false);
+        refmsg.textContent="시간이 초과됐습니다. 잠시 후 새로고침해 확인해주세요.";
+      }
+    },5000);
+  }catch(e){
+    setBusy(false);
+    refmsg.textContent="갱신 요청 실패: "+e.message;
+  }
+});
 </script>
 </body>
 </html>
