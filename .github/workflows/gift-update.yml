@@ -2,13 +2,12 @@ name: 증정 트래킹 갱신
 
 # GitHub 서버에서 실행되므로 내 PC가 꺼져 있어도 동작한다.
 # cron 은 UTC 기준 — KST = UTC + 9시간.
-#   05:00 UTC = 14:00 KST   (점심 마감)
-#   08:00 UTC = 17:00 KST
-#   11:00 UTC = 20:00 KST
-#   14:00 UTC = 23:00 KST   (마감)
+#   02:00~14:30 UTC = KST 11:00~23:30, 30분마다 (하루 26회)
+#   영업시간 밖에는 데이터가 변하지 않아 돌리지 않는다.
+#   * GitHub 무료 러너의 예약 실행은 혼잡 시 5~20분 늦어질 수 있다.
 on:
   schedule:
-    - cron: "0 5,8,11,14 * * *"
+    - cron: "*/30 2-14 * * *"
   workflow_dispatch:        # Actions 탭에서 수동 실행
 
 concurrency:
@@ -29,11 +28,25 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 라이브러리 설치
+      - name: 파이썬 패키지 설치
         run: |
           python -m pip install --quiet --upgrade pip
           python -m pip install --quiet playwright openpyxl
-          python -m playwright install --with-deps chromium
+
+      - name: 브라우저 캐시
+        id: browser-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}
+
+      - name: 브라우저 설치
+        run: |
+          if [ "${{ steps.browser-cache.outputs.cache-hit }}" = "true" ]; then
+            python -m playwright install-deps chromium
+          else
+            python -m playwright install --with-deps chromium
+          fi
 
       - name: POS 조회 및 집계
         env:
