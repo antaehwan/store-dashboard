@@ -131,8 +131,10 @@ def analyze(rows, cfg):
         "행사명": cfg["행사명"], "매장명": cfg["매장명"],
         "기준": {"최소금액": lo, "개당금액": per, "증정품문자": gift_mark,
                  "판매가": cfg.get("판매가", 0), "보전율": cfg.get("보전율", 0.7)},
-        "갱신": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "마지막결제": max((x["결제"] for x in rows_s), default=""),
+        "갱신": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+                  .strftime("%Y-%m-%d %H:%M"),
+        "마지막결제": (max((x["결제"] for x in rows_s if x["일자"] == max(days)), default="")
+                       if days else ""),
         "합계": {
             "영수증": len(rows_s), "취소": len(rows_s) - len(live), "유효": len(live),
             "총매출": sum(x["총매출"] for x in live),
