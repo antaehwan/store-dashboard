@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-09-27 10:37",
+  "updated_at": "2026-09-27 11:59",
   "store": "영등포",
   "store_code": "영등포",
   "months": {
@@ -4013,7 +4013,7 @@
       {
         "date": "2026-09-24",
         "weekday": "목",
-        "target": 3260002,
+        "target": 4360002,
         "actual": 4820086,
         "sales_l": 2935541,
         "sales_d": 1884545,
@@ -4028,7 +4028,7 @@
       {
         "date": "2026-09-25",
         "weekday": "금",
-        "target": 3260002,
+        "target": 4960002,
         "actual": 5145323,
         "sales_l": 2460324,
         "sales_d": 2684999,
@@ -4043,7 +4043,7 @@
       {
         "date": "2026-09-26",
         "weekday": "토",
-        "target": 3260002,
+        "target": 4560002,
         "actual": 4649836,
         "sales_l": 3154816,
         "sales_d": 1495020,
@@ -4058,7 +4058,7 @@
       {
         "date": "2026-09-27",
         "weekday": "일",
-        "target": 3260002,
+        "target": 2960002,
         "actual": 0,
         "sales_l": 0,
         "sales_d": 0,
@@ -4073,7 +4073,7 @@
       {
         "date": "2026-09-28",
         "weekday": "월",
-        "target": 3260002,
+        "target": 960002,
         "actual": 0,
         "sales_l": 0,
         "sales_d": 0,
@@ -4088,7 +4088,7 @@
       {
         "date": "2026-09-29",
         "weekday": "화",
-        "target": 1630001,
+        "target": 930001,
         "actual": 0,
         "sales_l": 0,
         "sales_d": 0,
@@ -4103,7 +4103,7 @@
       {
         "date": "2026-09-30",
         "weekday": "수",
-        "target": 1792993,
+        "target": 992993,
         "actual": 0,
         "sales_l": 0,
         "sales_d": 0,
@@ -6476,6 +6476,145 @@
       "op_profit_pct": 11.4,
       "customer_count": 5015,
       "avg_spend": 20359
+    },
+    "8": {
+      "revenue": 112347419,
+      "food_cost": 22759205,
+      "food_cost_pct": 20.3,
+      "food_cost_detail": [
+        {
+          "label": "식료재료비",
+          "amount": 16382765,
+          "pct": 72.0
+        },
+        {
+          "label": "음료재료비",
+          "amount": 1230859,
+          "pct": 5.4
+        },
+        {
+          "label": "기타재료비",
+          "amount": 5145581,
+          "pct": 22.6
+        }
+      ],
+      "labor_cost": 37077377,
+      "labor_cost_pct": 33.0,
+      "labor_cost_detail": [
+        {
+          "label": "고정비",
+          "amount": 25395990,
+          "pct": 68.5
+        },
+        {
+          "label": "변동비",
+          "amount": 6842096,
+          "pct": 18.5
+        },
+        {
+          "label": "연차수당",
+          "amount": 3032858,
+          "pct": 8.2
+        },
+        {
+          "label": "상여금",
+          "amount": 0,
+          "pct": 0.0
+        },
+        {
+          "label": "퇴직급여",
+          "amount": 1806433,
+          "pct": 4.9
+        }
+      ],
+      "ga_cost": 40858957,
+      "ga_cost_pct": 36.4,
+      "ga_cost_detail": [
+        {
+          "label": "복리후생비",
+          "amount": 1896542,
+          "pct": 4.6
+        },
+        {
+          "label": "교육훈련비",
+          "amount": 53879,
+          "pct": 0.1
+        },
+        {
+          "label": "여비교통비",
+          "amount": 0,
+          "pct": 0.0
+        },
+        {
+          "label": "통신비",
+          "amount": 40000,
+          "pct": 0.1
+        },
+        {
+          "label": "수도광열비",
+          "amount": 1580119,
+          "pct": 3.9
+        },
+        {
+          "label": "세금과공과",
+          "amount": 1717890,
+          "pct": 4.2
+        },
+        {
+          "label": "지급수수료",
+          "amount": 12296207,
+          "pct": 30.1
+        },
+        {
+          "label": "임차료",
+          "amount": 13699815,
+          "pct": 33.5
+        },
+        {
+          "label": "감가상각비",
+          "amount": 6257708,
+          "pct": 15.3
+        },
+        {
+          "label": "수선비",
+          "amount": 473708,
+          "pct": 1.2
+        },
+        {
+          "label": "소모품비",
+          "amount": 1331240,
+          "pct": 3.3
+        },
+        {
+          "label": "도서인쇄비",
+          "amount": 56456,
+          "pct": 0.1
+        },
+        {
+          "label": "보험료",
+          "amount": 870179,
+          "pct": 2.1
+        },
+        {
+          "label": "광고선전비",
+          "amount": 536850,
+          "pct": 1.3
+        },
+        {
+          "label": "기타",
+          "amount": 48364,
+          "pct": 0.1
+        },
+        {
+          "label": "라이선스 수수료",
+          "amount": 0,
+          "pct": 0.0
+        }
+      ],
+      "op_profit": 11651880,
+      "op_profit_pct": 10.4,
+      "customer_count": 5684,
+      "avg_spend": 19322
     }
   },
   "pmix": {
