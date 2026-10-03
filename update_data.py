@@ -25,6 +25,7 @@ EXCEL_PATH = os.path.join(_BASE, "01. 매출", "H.영등포 월간 매출 _ 26Y.
 PNL_PATH   = os.path.join(_BASE, "00. 실적", "H.영등포 누적 실적 _ 25Y~.xlsx")
 PMIX_PATH  = os.path.join(_BASE, "02.P-MIX", "H.영등포 P-MIX _ 26Y.xlsx")
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "data", "data.json")
+DELIVERY_PATH = os.path.expanduser("~/matsul/delivery.json")
 
 WEEKDAY_KO = ["월", "화", "수", "목", "금", "토", "일"]
 
@@ -393,9 +394,8 @@ def get_naver_review_count():
             )
             html = page.content()
             browser.close()
-        m = re.search(r'"hideProductSelectBox"\s*:\s*true\s*,\s*"total"\s*:\s*(\d+)', html)
-        if not m:
-            m = re.search(r'"total"\s*:\s*(\d+)\s*,\s*"showRecommendationSort"', html)
+        # 네이버가 보여주는 '방문자 리뷰' 수. 예전 "total" 패턴은 다른 값(약 1,296)을 잡았다.
+        m = re.search(r'"visitorReviewsTotal"\s*:\s*(\d+)', html)
         return int(m.group(1)) if m else None
     except Exception as e:
         print(f"  리뷰 수 조회 실패: {e}")
@@ -431,6 +431,17 @@ def main():
 
     print(f"\nP-MIX 파일 읽는 중...")
     pmix_data = parse_pmix()
+
+    # 배달 매출은 영수증 테이블명(배달 1~5) 기준 — ~/matsul/delivery_receipts.py 가 만든다.
+    # POS 메뉴가 더 이상 [배달]로 따로 찍히지 않아 P-MIX 배달 집계는 쓰지 않는다.
+    if os.path.exists(DELIVERY_PATH):
+        with open(DELIVERY_PATH, encoding="utf-8") as f:
+            delivery = json.load(f)
+        for m_str, d in delivery.items():
+            if m_str in pmix_data:
+                pmix_data[m_str]["delivery_revenue"] = d["revenue"]
+                pmix_data[m_str]["delivery_count"] = d["count"]
+                print(f"  배달 {m_str}월(영수증): {d['revenue']:,}원 / {d['count']}건")
 
     print(f"\n네이버 리뷰 수 가져오는 중...")
     review_count = get_naver_review_count()
